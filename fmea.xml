@@ -1,0 +1,238 @@
+
+
+
+
+
+<scxml datamodel="jexl" location="Scxml" version="1.0"
+	xmlns="http://www.w3.org/2005/07/scxml" initialstate="intitialstae">
+
+
+
+
+	<datamodel>
+		<!--<data id="sensordata" src="http://loaclhost:8080/retrive/sensor/data?hk200300,hk1720" -->
+
+		<data id="sensorData" src="http://localhost:8080/sensordata.json" />
+		<data id="dp1" />
+		<data id="dp2" />
+		<data id="dp3" />
+
+
+	</datamodel>
+	<state id="start">
+		<initial>
+			<transition target="operating" />
+		</initial>
+		<history id="operating" type="deep">
+			<transition target="No_Fault" />
+		</history>
+
+		<state id="No_Fault">
+
+
+
+
+
+
+			<onentry>
+				<assign location="dp1" expr="sensorData.HK_200300 &lt; 25" />
+				<assign location="dp2" expr="true" />
+				<assign location="dp3" expr="true" />
+
+
+
+			</onentry>
+
+			<transition event="fmea.pause" target="pause" />
+			<transition event="fmea.start" target="Fault">
+
+				<log label="fmea.start event called" />
+
+			</transition>
+			<transition event="fmea.stop" target="stop">
+
+
+
+				<log label="stop event called from the no_fault state" />
+
+			</transition>
+
+
+
+
+			<onexit>
+				<log label="DP1 Value On Exit" expr="dp1" />
+			</onexit>
+
+
+
+
+		</state>
+
+	</state>
+
+
+	<state id="Fault" initial="Root_Cause">
+
+
+		<datamodel>
+			<data id="rc_1" />
+			<data id="rc_2" />
+			<data id="rc_3" />
+			<data id="fm_1" />
+		</datamodel>
+
+
+
+		<parallel id="Root_Cause">
+
+			<onentry>
+				<assign location="rc_1" expr="dp1 and dp2" />
+
+				<assign location="rc_2" expr="dp2 and dp3" />
+
+				<assign location="rc_3" expr="dp3" />
+
+
+			</onentry>
+
+
+			<state id="RC1" initial="RC1_Initial">
+
+
+
+				<state id="RC1_Initial">
+					<transition cond="rc_1" target="rc1" />
+				</state>
+
+
+
+				<final id="rc1">
+					<onentry>
+						<log label="Fault RC1" expr="rc_1" />
+					</onentry>
+				</final>
+
+
+
+
+			</state>
+
+
+
+
+
+			<state id="RC2" initial="RC2_Initial">
+
+
+
+				<state id="RC2_Initial">
+					<transition cond="rc_2" target="rc2" />
+				</state>
+
+
+
+				<final id="rc2">
+					<onentry>
+						<log label="Fault RC2" expr="rc_2" />
+					</onentry>
+				</final>
+
+			</state>
+
+
+
+			<state id="RC3" initial="RC3_Initial">
+
+
+
+				<state id="RC3_Initial">
+					<transition cond="rc_3" target="rc3" />
+				</state>
+
+
+
+				<final id="rc3">
+					<onentry>
+						<log label="Fault RC3 updated" expr="rc_3" />
+					</onentry>
+				</final>
+
+
+
+			</state>
+
+
+
+			<transition target="Fault_Mode" />
+
+			<onexit>
+				<assign location="fm_1" expr="rc_1 and rc_2" />
+			</onexit>
+
+		</parallel>
+
+
+
+
+
+		<parallel id="Fault_Mode">
+			<state id="FM1" initial="FM1_Check">
+				<state id="FM1_Check">
+					<transition cond="fm_1" target="fm1" />
+				</state>
+
+				<final id="fm1">
+					<onentry>
+						<log label="Fault Mode FM1" expr="fm_1" />
+					</onentry>
+				</final>
+			</state>
+
+
+
+			<state id="FM2">
+				<onentry>
+					<log label="FM2" />
+				</onentry>
+			</state>
+		</parallel>
+		<transition event="fmea.reset" target="start">
+
+			<log label="fmea.reset event called" />
+		</transition>
+
+		<transition event="fmea.stop" target="stop">
+
+
+
+			<log label="stop event called from the fault state" />
+
+		</transition>
+		<transition event="fmea.pause" target="pause">
+			<log label="pause event called from the fault state" />
+
+		</transition>
+
+	</state>
+	<final id="stop">
+	</final>
+	<state id="pause">
+		<transition event="fmea.resume" target="operating">
+			<log label="fmea.resume event called from pause state" />
+
+		</transition>
+		<transition event="fmea.stop" target="stop">
+			<log label="stop event called from the pause state" />
+
+		</transition>
+
+		<transition event="fmea.reset" target="start">
+
+			<log label="fmea.reset event called from pause state" />
+		</transition>
+
+
+
+	</state>
+</scxml>
